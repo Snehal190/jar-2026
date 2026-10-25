@@ -208,6 +208,13 @@
     min-height: 48px; cursor: pointer; font-weight: 600;
   }
 
+  .demo-bar {
+    position: sticky; top: 0; z-index: 4; text-align: center; font-size: 15px; padding: 10px 16px;
+    background: var(--fun); color: #fff;
+  }
+  .demo-bar a { color: #fff; font-weight: 700; }
+  .demo-bar[hidden] { display: none; }
+
   /* Undo toast */
   .toast {
     position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translate(-50%, 150%);
@@ -246,6 +253,7 @@
 </style>
 </head>
 <body>
+<div class="demo-bar" id="demoBar" hidden>Demo — your real targets aren't touched. <a href="./">Back to my jar</a></div>
 <div class="wrap">
   <header>
     <div>
@@ -386,8 +394,10 @@ function load() {
   } catch {}
   return { theme: null, updatedAt: 0, goals: DEFAULTS.map((g, i) => ({ id: uid(), title: g.title, target: g.target, count: 0, color: i % COLORS.length })) };
 }
+// ?demo shows the full-jar celebration on a throwaway copy: nothing is saved or synced.
+const DEMO = new URLSearchParams(location.search).has("demo");
 let state = load();
-const saveLocal = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+const saveLocal = () => { if (DEMO) return; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 let pass = "";
 try { pass = localStorage.getItem(PASS_KEY) || ""; } catch {}
 
@@ -517,6 +527,7 @@ function adopt(remote) {
 }
 
 async function pull() {
+  if (DEMO) return;
   if (!pass) return setSync("locked", "Passcode needed");
   setSync("busy", "Syncing");
   try {
@@ -532,6 +543,7 @@ async function pull() {
 }
 
 async function push(keepalive = false) {
+  if (DEMO) return;
   clearTimeout(pushTimer); pushTimer = null;
   if (!pass) return setSync("locked", "Passcode needed");
   setSync("busy", "Syncing");
@@ -543,6 +555,7 @@ async function push(keepalive = false) {
 }
 
 function schedulePush() {
+  if (DEMO) return;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(push, 600);
 }
@@ -714,7 +727,16 @@ addEventListener("online", pull);
 applyTheme();
 render();
 setSync("off", "Not synced yet");
-if (pass) pull(); else setTimeout(() => openPass(), 600);
+if (DEMO) runDemo();
+else if (pass) pull(); else setTimeout(() => openPass(), 600);
+
+function runDemo() {
+  $("demoBar").hidden = false;
+  state.goals.forEach(g => { g.count = Math.floor(g.target / 3); });
+  render();
+  // Fill one target at a time, then the last one tips the jar to 100% and it bursts.
+  state.goals.forEach((g, i) => setTimeout(() => { g.count = g.target; commit(); }, 1200 + i * 450));
+}
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>

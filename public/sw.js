@@ -1,5 +1,5 @@
 // Network-first so updates arrive when online; cached copy keeps the app working offline.
-const CACHE = "jar2026-v3";
+const CACHE = "jar2026-v4";
 const FILES = ["./", "index.html", "manifest.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {
